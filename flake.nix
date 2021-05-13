@@ -20,7 +20,7 @@
 
           buildInputs = with pkgs.python3.pkgs; [ attrs ];
 
-          checkInputs = with pkgs.python3.pkgs; [ pytestCheckHook ];
+          checkInputs = with pkgs.python3.pkgs; [ pytestCheckHook mypy ];
         };
         defaultPackage = pkgs.python3.withPackages (_: [ packages.gmcode ] );
       }
