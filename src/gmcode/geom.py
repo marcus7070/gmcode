@@ -40,6 +40,12 @@ class Vector:
     def __truediv__(self, o: float) -> "Vector":
         return self.__mul__(1.0 / o)
 
+    def cross(self, o: "Vector") -> "Vector":
+        x = self.y * o.z - self.z * o.y
+        y = -self.x * o.z + self.z * o.x
+        z = self.x * o.y - self.y * o.x
+        return self.__class__(x, y, z)
+
     def unit_vector(self) -> "Vector":
         return self.__truediv__(abs(self))
 
@@ -58,18 +64,27 @@ class Path:
         raise NotImplementedError()
 
 
+@attr.s(auto_detect=True, frozen=True, slots=True)  # type: ignore[call-overload]
 class Line(Path):
 
     def tangent(self, val: Literal[0, 1] = 0) -> Vector:
         return (self.end - self.start).unit_vector()
 
-    def offset(self, val_xy: float, val_z: float = 0.0) -> "Line":
-        # need to rotate the offset so the Z aligns with the tangent
-        pass
+    def normal(self, val: Literal[0, 1] = 0) -> Vector:
+        # already a unit vector, no need to normalise twice
+        return self.tangent().cross(Vector(0, 0, 1))
+
+    def offset_xy(self, val) -> "Line":
+        offset_vec = val * self.normal()
+        return self.__class__(self.start + offset_vec, self.end + offset_vec)
 
     def extend(self, pre: float = 0.0, post: float = 0.0) -> "Line":
         pass
 
 
-class Arc(Path):
-    pass
+@attr.s(auto_detect=True, frozen=True, slots=True)  # type: ignore[call-overload]
+class ArcXY(Path):
+    radius: float = attr.ib(0.0)
+
+    def tangent(self, val: Literal[0, 1]) -> Vector:
+

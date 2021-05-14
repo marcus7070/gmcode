@@ -100,3 +100,18 @@ def test_vector_unit_vector2():
 
     vec2 = 100 * vec0
     assert vec1 == vec2.unit_vector()
+
+
+def test_vector_cross():
+    v0 = Vector(1, 2, 3)
+    v1 = Vector(4, 5, 6)
+    v2 = v0.cross(v1)
+    assert v2 == Vector(-3, 6, -3)
+
+
+def test_vector_chaining():
+    v0 = Vector(-1, -1, -1)
+    v1 = v0 + Vector(0, 0, -1) + Vector() + Vector(0, 0, 1)
+    assert v0 == v1
+    v2 = Vector(1.0, 0, 0).unit_vector().cross(Vector(0, 0, 1.0))
+    assert v2 == Vector(0, -1, 0)

@@ -14,7 +14,7 @@ def test_line_tangent():
 
 def test_line_offset():
     l0 = Line(Vector(0, 0, 0), Vector(1, 0, 0))
-    v_off = Vector(1, 1, 0)
-    l1 = l0.offset(v_off)
+    offset = 1
+    l1 = l0.offset_xy(offset)
     assert l1.tangent() == l0.tangent()
-    assert l1.end == Vector(1, 1, 1)
+    assert l1.end == Vector(1, -1, 0)
