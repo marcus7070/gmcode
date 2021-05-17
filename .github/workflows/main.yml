@@ -1,0 +1,72 @@
+name: "CI"
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+      with:
+          # Nix Flakes doesn't work on shallow clones
+          fetch-depth: 0
+
+    - name: install nix
+      uses: cachix/install-nix-action@v12
+      with:
+        install_url: https://github.com/numtide/nix-unstable-installer/releases/download/nix-2.4pre20210429_d15a196/install
+        extra_nix_config: |
+          experimental-features = nix-command flakes
+
+    - name: list flake
+      run: nix flake show
+      continue-on-error: true
+
+    - name: test
+      run: nix develop . --command 'pytest' '-vv'
+
+    - name: build
+      run: nix build -L --no-link .
+
+  lint:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+      with:
+          fetch-depth: 0
+
+    - name: install nix
+      uses: cachix/install-nix-action@v12
+      with:
+        install_url: https://github.com/numtide/nix-unstable-installer/releases/download/nix-2.4pre20210429_d15a196/install
+        extra_nix_config: |
+          experimental-features = nix-command flakes
+    
+    - name: run black
+      run: nix develop . --command 'black' '--diff' '--check' '.'
+
+  mypy:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+      with:
+          fetch-depth: 0
+
+    - name: install nix
+      uses: cachix/install-nix-action@v12
+      with:
+        install_url: https://github.com/numtide/nix-unstable-installer/releases/download/nix-2.4pre20210429_d15a196/install
+        extra_nix_config: |
+          experimental-features = nix-command flakes
+    
+    - name: run mypy 
+      run: nix develop . --command 'mypy' 'src/gmcode'
