@@ -1,1 +1,1 @@
-from gmcode.machine import Machine
+from gmcode.machine import Machine, MachineError
