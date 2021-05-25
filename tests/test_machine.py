@@ -126,7 +126,7 @@ def test_lineends(tmp_machine):
     g.close()
 
     assert "2" in line(f, -1)
-    assert not "1" in line(f, -1)
+    assert "1" not in line(f, -1)
     assert "1" in line(f, -2)
 
 
