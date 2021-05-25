@@ -75,9 +75,13 @@ class Machine:
         self.write("G21 ; mm")
         self.write("G92.1 ; cancel offsets")
         self.write("G40 ; cutter compensation off")
+        self.write("G90 ; absolute distance mode")
+        self.write("G90.1 ; arc centre absolute distance mode")
+        self.write("G94 ; feed rate in units per minute")
+        self.path_mode(p=0.05, q=0.05)
         self.write("M600 ; reset toolchange")
         self.toolchange(1)
-        self.path_mode(p=0.05, q=0.05)
+        self.comment("##### End preamble #####")
 
     def g0(self, x: float = 0, y: float = 0, z: float = 0):
         """

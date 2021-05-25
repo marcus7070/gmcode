@@ -248,3 +248,20 @@ def test_dwell(tmp_machine):
     assert "G4 P3.145" in line(f, -1)
     # there was two dwell commands
     assert "G4 P3.145" in line(f, -2)
+
+
+def test_std_init(tmp_machine):
+    g, f = tmp_machine
+    g.close()
+    codes = [
+        "G17",  # set the plane
+        "G21",  # units
+        "G92.1",  # offsets
+        "G40",  # cancel cutter comp
+        "G90",  # absolute dist mode
+        "G90.1",  # arc centre mode
+        "G94",  # feed rate mode
+        "G64",  # path blending mode
+    ]
+    for code in codes:
+        assert num_lines(f, code) >= 1
