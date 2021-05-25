@@ -238,3 +238,13 @@ def test_path_mode(tmp_machine, kwargs, in_result, not_in_result):
 
     for s in not_in_result:
         assert s not in l0
+
+
+def test_dwell(tmp_machine):
+    g, f = tmp_machine
+    g.dwell(3.145)
+    g.dwell(3.145)
+    g.close()
+    assert "G4 P3.145" in line(f, -1)
+    # there was two dwell commands
+    assert "G4 P3.145" in line(f, -2)

@@ -206,6 +206,9 @@ class Machine:
             self.write(f"T{num} M6")
             self.tool_number = num
 
+    def dwell(self, time: float):
+        self.write(f"G4 P{self.format(time)}")
+
     def path_mode(
         self,
         exact_path: bool = False,
