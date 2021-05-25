@@ -82,12 +82,9 @@ def test_g0(tmp_machine):
 
 def test_set_feedrate(tmp_machine):
     g, f = tmp_machine
-    g.g1(x=1, f=200)
-    assert g.feedrate is not None
+    g.feedrate(f=234)
     g.close()
-    l0 = line(f, -1)
-    assert "F200" in l0
-    assert "G1" in l0
+    assert "F234" in line(f, -1)
 
 
 @pytest.mark.parametrize("g_command", ["g0", "g1"])
@@ -95,7 +92,7 @@ def test_set_feedrate(tmp_machine):
 def test_g_no_move(tmp_machine, o, g_command):
     g, f = tmp_machine
     if g_command == "g1":
-        g.g1(f=100)
+        g.feedrate(100)
     g.write("something")  # incase std_init does not produce any output
     bound_method = getattr(g, g_command)
     bound_method(o, o, o)

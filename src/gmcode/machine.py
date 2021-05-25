@@ -20,7 +20,7 @@ class Machine:
         self.outfile = open(outfile, "w")
         self.position = Vector()
         self.accuracy = accuracy
-        self.feedrate: Optional[float] = None
+        self._feedrate: Optional[float] = None
         self._queue: Dict[str, float] = {}
         self._plane: Optional[str] = None
         self.tool_number: Optional[int] = None
@@ -40,7 +40,6 @@ class Machine:
         x: Optional[float] = None,
         y: Optional[float] = None,
         z: Optional[float] = None,
-        f: Optional[float] = None,
     ):
         """
         Queues up a series of changes to the state of the machine.
@@ -48,15 +47,14 @@ class Machine:
           x: absolute x coord
           y: absolute y coord
           z: absolute z coord
-          f: feedrate
         """
-        d = {"x": x, "y": y, "z": z, "f": f}
+        d = {"x": x, "y": y, "z": z}
         out = {k: v for k, v in d.items() if v is not None}
         self._queue.update(out)
 
     def _queue_apply(self):
         """
-        Applies what was in the queue and clears it.
+        Applies what was in the queue to self.position and clears it.
         """
 
         self.position = Vector(
@@ -65,9 +63,6 @@ class Machine:
                 for k in ["x", "y", "z"]
             }
         )
-
-        if "f" in self._queue:
-            self.feedrate = self._queue["f"]
 
         self._queue = {}
 
@@ -107,7 +102,21 @@ class Machine:
 
         self._queue_apply()
 
-    def g1(self, x: float = 0, y: float = 0, z: float = 0, f: Optional[float] = None):
+    def feedrate(self, f: float):
+        """
+        Set feedrate in units per minute.
+        """
+
+        if self._feedrate is None or abs(self._feedrate - f) > self.accuracy:
+            self.write(f"F{self.format(f)}")
+            self._feedrate = f
+
+    def g1(
+        self,
+        x: Optional[float] = None,
+        y: Optional[float] = None,
+        z: Optional[float] = None,
+    ):
         """
         Linear move. Axes inputs are absolute coords.
 
@@ -115,23 +124,19 @@ class Machine:
           x: x coord
           y: y coord
           z: z coord
-          f: feedrate
         """
-        if self.feedrate is None and f is None:
+        if self.feedrate is None:
             raise MachineError("Feedrate must be defined for a G1 command")
 
         request = {"X": x, "Y": y, "Z": z}
         strings = ["G1"]
-        for axis in request:
-            movement = abs(getattr(self.position, axis.lower()) - request[axis])
-            if movement > self.accuracy:
-                # move required
-                strings.append(f"{axis}{self.format(request[axis])}")
-                self._queue_state(**{axis.lower(): request[axis]})
-
-        if f and (self.feedrate is None or abs(self.feedrate - f) > self.accuracy):
-            strings.append(f"F{self.format(f)}")
-            self._queue_state(f=f)
+        for axis, val in request.items():
+            if val is not None:
+                movement = abs(getattr(self.position, axis.lower()) - val)
+                if movement > self.accuracy:
+                    # move required
+                    strings.append(f"{axis}{self.format(val)}")
+                    self._queue_state(**{axis.lower(): val})
 
         if len(strings) > 1:  # ie. don't write an empty command
             self.write(" ".join(strings))
