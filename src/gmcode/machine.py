@@ -177,10 +177,8 @@ class Machine:
             raise MachineError("{plane} is not a valid plane command")
 
         plane_command = PLANE_COMMANDS[plane_name]
-        print(f"plane name is {plane_command}")
         if self._plane != plane_command:
             self.write(f"{plane_command} ; plane {plane_name}")
-            print(f"wrote {plane_command} ; plane {plane_name}")
             self._plane = plane_command
 
     def write(self, line: str):
