@@ -1,5 +1,5 @@
 import pytest
-from gmcode import Machine, MachineError
+from gmcode import Machine, MachineError, Vector
 
 
 @pytest.fixture
@@ -265,3 +265,32 @@ def test_std_init(tmp_machine):
     ]
     for code in codes:
         assert num_lines(f, code) >= 1
+
+
+def test_position_g0(tmp_machine):
+    # see if Machine.position follows a bunch of g0 moves
+    g, _ = tmp_machine
+    g.g0(100)
+    assert g.position == Vector(100, 0, 0)
+    g.g0(12, 13)
+    assert g.position == Vector(12, 13, 0)
+    g.g0(14, 15, -5)
+    assert g.position == Vector(14, 15, -5)
+    g.g0(z=1)
+    assert g.position == Vector(14, 15, 1)
+    g.g0(y=10)
+    assert g.position == Vector(14, 10, 1)
+
+
+def test_position_g1(tmp_machine):
+    # see if Machine.position follows a bunch of g1 moves
+    g, _ = tmp_machine
+    g.g0(10, 10)
+    g.g1(z=-5)
+    assert g.position == Vector(10, 10, -5)
+    g.g1(x=11)
+    assert g.position == Vector(11, 10, -5)
+    g.g1(y=12)
+    assert g.position == Vector(11, 12, -5)
+    g.g1(11, 12, 13)
+    assert g.position == Vector(11, 12, 13)

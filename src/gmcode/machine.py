@@ -83,7 +83,35 @@ class Machine:
         self.toolchange(1)
         self.comment("##### End preamble #####")
 
-    def g0(self, x: float = 0, y: float = 0, z: float = 0):
+    def _xyz_to_command(
+        self,
+        x: Optional[float] = None,
+        y: Optional[float] = None,
+        z: Optional[float] = None,
+    ):
+        """
+        Used for g0 and g1 to replace the None in optional arguments with
+        current positions. Updates self.position too.
+        """
+        arg_dict = {"X": x, "Y": y, "Z": z}
+        out = []
+        request = {k: v for k, v in arg_dict.items() if v is not None}
+        for axis, val in request.items():
+            movement = abs(getattr(self.position, axis.lower()) - val)
+            if movement > self.accuracy:
+                # move required
+                out.append(f"{axis}{self.format(val)}")
+                self._queue_state(**{axis.lower(): val})
+
+        self._queue_apply()
+        return out
+
+    def g0(
+        self,
+        x: Optional[float] = None,
+        y: Optional[float] = None,
+        z: Optional[float] = None,
+    ):
         """
         Rapid move. Inputs are absolute coords.
 
@@ -92,19 +120,10 @@ class Machine:
           y: y coord
           z: z coord
         """
-        request = {"X": x, "Y": y, "Z": z}
-        strings = ["G0"]
-        for axis in request:
-            movement = abs(getattr(self.position, axis.lower()) - request[axis])
-            if movement > self.accuracy:
-                # move required
-                strings.append(f"{axis}{self.format(request[axis])}")
-                self._queue_state(**{axis.lower(): request[axis]})
+        strings = ["G0"] + self._xyz_to_command(x, y, z)
 
         if len(strings) > 1:  # ie. don't write an empty move
             self.write(" ".join(strings))
-
-        self._queue_apply()
 
     def feedrate(self, f: float):
         """
@@ -132,20 +151,10 @@ class Machine:
         if self.feedrate is None:
             raise MachineError("Feedrate must be defined for a G1 command")
 
-        request = {"X": x, "Y": y, "Z": z}
-        strings = ["G1"]
-        for axis, val in request.items():
-            if val is not None:
-                movement = abs(getattr(self.position, axis.lower()) - val)
-                if movement > self.accuracy:
-                    # move required
-                    strings.append(f"{axis}{self.format(val)}")
-                    self._queue_state(**{axis.lower(): val})
+        strings = ["G1"] + self._xyz_to_command(x, y, z)
 
         if len(strings) > 1:  # ie. don't write an empty command
             self.write(" ".join(strings))
-
-        self._queue_apply()
 
     def format(self, num: float) -> str:
         """
