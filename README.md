@@ -9,7 +9,7 @@ I have spent a fair bit of time standing in front of a manual mill and turning w
 Traditional CAM packages are useless to me because:
 
 * I have lost a lot of work previously when I lost access to a subscription model CAD package. This is unacceptable, and I'll now go to extreme lengths to use reproducible software, which excludes all restrictively licensed CAM software.
-* The"user friendly interfaces and the high-level abstraction ontop of the g-code are inefficient for me. I know where I want my tools to cut, I don't want to have to learn how to make a CAM package drive a tool there.
+* The user friendly interfaces and the high-level abstraction ontop of the g-code are inefficient for me. I know where I want my tools to cut, I don't want to have to learn how to make a CAM package drive a tool there.
 * I use CadQuery to produce models in Python. I have all the dimensions of my models available to me as Python objects, so it would be unproductive to step out of Python and into some monolithic CAM package.
 
 ## Geometry classes
