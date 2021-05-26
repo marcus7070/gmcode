@@ -156,6 +156,56 @@ class Machine:
         if len(strings) > 1:  # ie. don't write an empty command
             self.write(" ".join(strings))
 
+    def arc(
+        self,
+        x: Optional[float] = None,
+        y: Optional[float] = None,
+        z: Optional[float] = None,
+        i: Optional[float] = None,
+        j: Optional[float] = None,
+        cw: bool = True,
+        p: int = 1,
+    ):
+        """
+        Either a G3 or a G4 command.
+
+        Args:
+          x: x coord of the end of the arc. If None, then is equal to current x coord. Absolute coords.
+          y: y coord of the end of the arc. If None, then is equal to current y coord. Absolute coords.
+          z: z coord of the end of the arc. If None, then is equal to current z coord. Absolute coords.
+          i: x coord of the arc centre. An error is raised if this is None. Absolute coords.
+          j: y coord of the arc centre. An error is raised if this is None. Absolute coords.
+          cw: Is the arc clockwise?
+          p: number of turns.
+
+          TODO: Handle non-XY planes.
+        """
+
+        if i is None or j is None:
+            raise MachineError("arc centre must be specified")
+
+        if x is None:
+            x = self.position.x
+
+        if y is None:
+            y = self.position.y
+
+        if z is None:
+            z = self.position.z
+
+        command_elms = [
+            "G2" if cw else "G3",
+            f"X{self.format(x)}",
+            f"Y{self.format(y)}",
+            f"Z{self.format(z)}" if abs(z - self.position.z) > self.accuracy else "",
+            f"I{self.format(i)}",
+            f"J{self.format(j)}",
+            f"P{p}" if p != 1 else "",
+        ]
+        command = " ".join(command_elms)
+        self.write(command)
+        self.position = Vector(x, y, z)
+
     def format(self, num: float) -> str:
         """
         Formats a number for gcode output.

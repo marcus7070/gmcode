@@ -294,3 +294,42 @@ def test_position_g1(tmp_machine):
     assert g.position == Vector(11, 12, -5)
     g.g1(11, 12, 13)
     assert g.position == Vector(11, 12, 13)
+
+
+@pytest.mark.parametrize("command,cw", [("G2", True), ("G3", False)])
+def test_arc(tmp_machine, command, cw):
+    g, f = tmp_machine
+    g.g0(100, 200)
+    g.g0(z=-1)
+    current_pos = g.position
+    centre = current_pos + Vector(0, 5, 0)
+    end = current_pos + Vector(0, 10, 0)
+    g.arc(y=end.y, i=centre.x, j=centre.y, cw=cw)
+    g.close()
+    assert command in line(f, -1)
+    assert "X100" in line(f, -1)
+    assert "Y210" in line(f, -1)
+    assert "I100" in line(f, -1)
+    assert "J205" in line(f, -1)
+    assert "Z" not in line(f, -1)
+    assert "P" not in line(f, -1)
+
+
+@pytest.mark.parametrize("cw", [True, False])
+def test_position_arc(tmp_machine, cw):
+    # see if Machine.position follows a bunch of arc moves
+    g, _ = tmp_machine
+    g.g0(11, 12)
+    g.g1(-1)
+    start = g.position
+    radius = 3
+    centre = start + Vector(1, 1, 0).unit_vector() * radius
+    end = centre + Vector(-1, -1, 0).unit_vector() * radius
+    g.arc(end.x, end.y, i=centre.x, j=centre.y, cw=cw)
+    assert g.position == end
+    start = g.position
+    radius = 10
+    centre = start + Vector(1, 0, 0).unit_vector() * radius
+    end = centre + Vector(1, 1, 0).unit_vector() * radius
+    g.arc(end.x, end.y, i=centre.x, j=centre.y, cw=cw)
+    assert g.position == end
