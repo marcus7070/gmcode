@@ -342,3 +342,13 @@ def test_position_arc(tmp_machine, cw):
     end = centre + Vector(1, 1, 0).unit_vector() * radius
     g.arc(end.x, end.y, i=centre.x, j=centre.y, cw=cw)
     assert g.position == end
+
+
+@pytest.mark.parametrize("command,cw", [("G2", True), ("G3", False)])
+def test_arc_full_circle(tmp_machine, command, cw):
+    g, f = tmp_machine
+    g.g0(10, 11, 12)
+    g.arc(i=15, j=11, p=1, cw=cw)
+    assert g.position == Vector(10, 11, 12)
+    g.close()
+    assert command in line(f, -1)
