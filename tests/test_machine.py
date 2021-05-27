@@ -1,5 +1,6 @@
 import pytest
 from gmcode import Machine, MachineError, Vector
+import math
 
 
 @pytest.fixture
@@ -66,7 +67,15 @@ def test_format(tmp_machine):
     assert len(s2.split(".")[-1]) == g.places
 
 
-# def test_format2(tmp_machine):
+@pytest.mark.parametrize("accuracy", [1, 1e-1, 1e-6, 1e-8])
+def test_accuracy(tmp_machine, accuracy):
+    g, f = tmp_machine
+    g.accuracy = accuracy
+    assert g.format(math.pi) != g.format(math.pi + accuracy)
+    assert g.format(math.pi) != g.format(math.pi - accuracy)
+    # don't test for changes < accuracy causing no change in output
+    # low accuracy is just about reducing file size, so it doesn't matter if
+    # small changes do change output
 
 
 def test_g0(tmp_machine):
