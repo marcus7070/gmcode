@@ -21,6 +21,7 @@
           buildInputs = with pkgs.python3.pkgs; [ attrs ];
 
           checkInputs = with pkgs.python3.pkgs; [ pytestCheckHook mypy ];
+          pytestFlagsArray = [ "-vv" ];
         };
         defaultPackage = pkgs.python3.withPackages (_: [ packages.gmcode ] );
         devShell = pkgs.mkShell { buildInputs = [ (pkgs.python3.withPackages (ps: with ps; [
