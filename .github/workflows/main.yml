@@ -29,9 +29,6 @@ jobs:
       run: nix flake show
       continue-on-error: true
 
-    - name: test
-      run: nix develop . --command 'pytest' '-vv'
-
     - name: build
       run: nix build -L --no-link .
 
