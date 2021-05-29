@@ -20,6 +20,8 @@ def spiral(
       radius_end: The final radius of the spiral.
       doc: Depth of cut.
       cw: Clockwise?
+
+    Used for pocketing/clearing material.
     """
 
     if (centre.z - m.position.z) > m.accuracy:
