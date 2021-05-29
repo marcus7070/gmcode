@@ -18,7 +18,7 @@
           version = "0.1";
           src = ./.;
 
-          buildInputs = with pkgs.python3.pkgs; [ attrs ];
+          propagatedBuildInputs = with pkgs.python3.pkgs; [ attrs ];
 
           checkInputs = with pkgs.python3.pkgs; [ pytestCheckHook mypy ];
           pytestFlagsArray = [ "-vv" ];
