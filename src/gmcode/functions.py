@@ -4,7 +4,7 @@ Functions that operate on a Machine object.
 
 from gmcode import Machine, Vector, MachineError
 from itertools import cycle
-from math import copysign
+from math import copysign, ceil
 
 
 def spiral(
@@ -48,3 +48,28 @@ def spiral(
     end = centre + vec0.unit_vector() * radius_end
     m.g1(end.x, end.y)
     m.arc(i=centre.x, j=centre.y, cw=cw)
+
+
+def helical_entry(
+    m: Machine,
+    centre: Vector,
+    final_height: float,
+    doc: float = 0.2,
+    cw: bool = True,
+):
+    """
+    Helix with a defined depth of cut.
+
+    Args:
+      centre: Centre of the helix, z value doesn't matter.
+      final_height: Helix will end at this height.
+      doc: Helix will be close to this depth of cut, will not exceed it.
+      cw: Clockwise?
+
+    Will wind up at the same x and y position it started from.
+    """
+
+    m.comment("helical entry start")
+    total_height = abs(m.position.z - final_height)
+    loops = ceil(total_height / doc)
+    m.arc(z=final_height, i=centre.x, j=centre.y, p=loops, cw=cw)

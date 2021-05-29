@@ -49,3 +49,25 @@ def test_sprial_out(tmp_file, tmp_machine, cw, command):
     assert command in s0
     assert "Y2.0" in s0
     assert "X-5.0" in s0 or "X7.0" in s0
+
+
+@pytest.mark.parametrize("cw,command", [(True, "G2"), (False, "G3")])
+def test_helical_entry(tmp_file, tmp_machine, cw, command):
+    centre = Vector(-5, -6, -7)
+    radius = 4
+    radial_dir = Vector(4, 5, 0).unit_vector()
+    start = centre + radius * radial_dir
+    tmp_machine.g0(start.x, start.y)
+    functions.helical_entry(
+        tmp_machine,
+        centre=centre,
+        final_height=centre.z,
+        doc=0.1,
+        cw=cw,
+    )
+    assert tmp_machine.position == Vector(start.x, start.y, centre.z)
+    tmp_machine.close()
+    l0 = line(tmp_file, -1)
+    assert command in l0
+    assert "P" in l0
+    assert f"Z{centre.z:.1f}" in l0
