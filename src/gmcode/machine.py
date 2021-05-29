@@ -1,7 +1,7 @@
 import pathlib
 import math
-from typing import Optional, Dict, cast
-from gmcode.geom import Vector
+from typing import Optional, Dict, List, cast
+from gmcode.geom import Vector, Line, ArcXY, PathElement
 
 
 class MachineError(RuntimeError):
@@ -205,6 +205,27 @@ class Machine:
         command = " ".join(command_elms)
         self.write(command)
         self.position = Vector(x, y, z)
+
+    def cut(self, paths: List[PathElement]):
+        """
+        Cuts a series of lines or arcs (subclasses of PathElement).
+
+        Args:
+          paths: A list of paths to cut
+        """
+        for p in paths:
+            if self.position != p.start:
+                raise MachineError(
+                    f"Current position ({p}) is not equal to path start position ({p.start})"
+                )
+            if isinstance(p, Line):
+                self.g1(*p.end)
+            elif isinstance(p, ArcXY):
+                self.arc(p.end.x, p.end.y, p.end.z, i=p.centre.x, j=p.centre.y, cw=p.cw)
+            else:
+                raise MachineError(
+                    f"cut method does not know how to handle type {type(p)}"
+                )
 
     def format(self, num: float) -> str:
         """

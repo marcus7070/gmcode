@@ -1,5 +1,6 @@
 import pytest
 from gmcode import MachineError, Vector
+from gmcode.geom import Line, ArcXY
 import math
 
 
@@ -319,3 +320,54 @@ def test_arc_full_circle(tmp_file, tmp_machine, command, cw):
     assert tmp_machine.position == Vector(10, 11, 12)
     tmp_machine.close()
     assert command in line(tmp_file, -1)
+
+
+def test_cut_lines(tmp_file, tmp_machine):
+
+    point0 = Vector(1, 1, 0)
+    point1 = Vector(2, 2, 0)
+    point2 = Vector(3, 1, 0)
+    lines = [
+        Line(point0, point1),
+        Line(point1, point2),
+        Line(point2, point0),
+    ]
+    tmp_machine.g0(point0.x, point0.y)
+    tmp_machine.feedrate(100)
+    tmp_machine.g1(z=point0.z)
+    tmp_machine.cut([lines[0]])
+    assert tmp_machine.position == lines[0].end
+
+    tmp_machine.g0(point0.x, point0.y)
+    tmp_machine.cut(lines)
+    assert tmp_machine.position == point0
+    tmp_machine.close()
+    assert f"G1 X{tmp_machine.format(point0.x)}" in line(tmp_file, -1)
+    assert (
+        f"G1 X{tmp_machine.format(point2.x)} Y{tmp_machine.format(point2.y)}"
+        in line(tmp_file, -2)
+    )
+    assert (
+        f"G1 X{tmp_machine.format(point1.x)} Y{tmp_machine.format(point1.y)}"
+        in line(tmp_file, -3)
+    )
+
+
+def test_cut_arcs(tmp_file, tmp_machine):
+
+    point0 = Vector(0, 0, 0)
+    centre0 = Vector(1, 0, 0)
+    point1 = Vector(2, 0, 0)
+    centre1 = point1 + Vector(1, 0, 0)
+    point2 = centre1 + Vector(1, 0, 0)
+    arcs = [
+        ArcXY(start=point0, end=point1, centre=centre0),
+        ArcXY(start=point1, end=point2, centre=centre1, cw=False),
+    ]
+    tmp_machine.g0(*point0)
+    tmp_machine.cut(arcs)
+    assert tmp_machine.position == point2
+    tmp_machine.close()
+
+    assert f"G3 X{tmp_machine.format(point2.x)}" in line(tmp_file, -1)
+    assert f"G2 X{tmp_machine.format(point1.x)}" in line(tmp_file, -2)
