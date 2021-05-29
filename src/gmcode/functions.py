@@ -31,6 +31,7 @@ def spiral(
     centres = [centre + wobble, centre - wobble]
     last_radius = radius_end - doc  # the last radius that the spiral out should cut
     counter = 0
+    m.arc(i=centre.x, j=centre.y, cw=cw)
     for c in cycle(centres):
         # make a 180 degree arc around c
         end = (c - m.position) + c
