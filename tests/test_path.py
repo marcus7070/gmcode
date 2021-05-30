@@ -172,3 +172,27 @@ def test_arcxy_tangent(r):
         centre=Vector(0, 0, r),
     )
     assert a2.tangent(0) == a2.tangent(1)
+
+
+def test_arcxy_radius():
+
+    a0 = ArcXY(
+        start=Vector(1, 0, 0),
+        end=Vector(0, 1, 0),
+        centre=Vector(0, 0, 0),
+    )
+    assert a0.radius() == pytest.approx(1)
+
+    a1 = ArcXY(
+        start=Vector(10, 10, 0),
+        end=Vector(14, 10, 0),
+        centre=Vector(12, 10, 0),
+    )
+    assert a1.radius() == pytest.approx(2)
+
+    a2 = ArcXY(
+        start=Vector(-1, -1, -1),
+        end=Vector(-1.5, -0.5, -1),
+        centre=Vector(-1, -0.5, -1),
+    )
+    assert a2.radius() == pytest.approx(0.5)
