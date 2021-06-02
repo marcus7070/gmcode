@@ -47,7 +47,7 @@ def spiral(
 
     # final cut, a circle at end radius
     m.arc(i=centre.x, j=centre.y, cw=cw)
-    end = centre + vec0.unit_vector() * radius_end
+    end = centre + (m.position - centre).unit_vector() * radius_end
     m.g1(end.x, end.y)
     m.arc(i=centre.x, j=centre.y, cw=cw)
 
