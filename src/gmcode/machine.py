@@ -25,6 +25,7 @@ class Machine:
         self._plane: Optional[str] = None
         self.tool_number: Optional[int] = None
         self._path_mode: Optional[str] = None
+        self._unitialised: Dict[str, bool] = {"X": True, "Y": True, "Z": True}
 
     @property
     def accuracy(self):
@@ -95,13 +96,17 @@ class Machine:
         """
         arg_dict = {"X": x, "Y": y, "Z": z}
         out = []
-        request = {k: v for k, v in arg_dict.items() if v is not None}
+        request = {
+            k: v if v is not None else getattr(self.position, k.lower())
+            for k, v in arg_dict.items()
+        }
+
         for axis, val in request.items():
             movement = abs(getattr(self.position, axis.lower()) - val)
-            if movement > self.accuracy:
-                # move required
+            if movement > self.accuracy or self._unitialised[axis]:
                 out.append(f"{axis}{self.format(val)}")
                 self._queue_state(**{axis.lower(): val})
+                self._unitialised[axis] = False
 
         self._queue_apply()
         return out
@@ -179,6 +184,8 @@ class Machine:
           p: number of turns.
 
           TODO: Handle non-XY planes.
+          I always output axis words because it leaving them off can get
+          confusing when you are trying to read and debug g-code.
         """
 
         if i is None or j is None:

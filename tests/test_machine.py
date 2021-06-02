@@ -86,8 +86,10 @@ def test_set_feedrate(tmp_file, tmp_machine):
 def test_g_no_move(tmp_file, tmp_machine, o, g_command):
     if g_command == "g1":
         tmp_machine.feedrate(100)
-    tmp_machine.write("something")  # incase std_init does not produce any output
     bound_method = getattr(tmp_machine, g_command)
+    # first move will always produce output and initialise CNC position
+    bound_method(o, o, o)
+    tmp_machine.write("something")
     bound_method(o, o, o)
     tmp_machine.close()
     l0 = line(tmp_file, -1)
@@ -96,6 +98,7 @@ def test_g_no_move(tmp_file, tmp_machine, o, g_command):
 
 def test_g0_no_move_accuracy(tmp_file, tmp_machine):
     acc = tmp_machine.accuracy * 0.9
+    tmp_machine.g0(0, 0, 0)
     tmp_machine.write("something")
     tmp_machine.g0(z=acc)
     tmp_machine.close()
@@ -371,3 +374,46 @@ def test_cut_arcs(tmp_file, tmp_machine):
 
     assert f"G3 X{tmp_machine.format(point2.x)}" in line(tmp_file, -1)
     assert f"G2 X{tmp_machine.format(point1.x)}" in line(tmp_file, -2)
+
+
+@pytest.mark.parametrize("command", ["g0", "g1"])
+@pytest.mark.parametrize("px", [None, 0, 1])
+@pytest.mark.parametrize("py", [None, 0, 2])
+@pytest.mark.parametrize("pz", [None, 0, 3])
+def test_initial_position(tmp_file, tmp_machine, command, px, py, pz):
+    """
+    Machine.g0 and .g1 do not print out axis words unless needed. Machine
+    initialises position as (0, 0, 0), but it's pretty common for the CNC
+    machine to start the program at a random point. So if the machine starts at
+    (201.5654, 172.345435, 42.009234), and we do Machine.g0(0, 0, -1), it will
+    output G0 Z-1 and we will be nowhere near what we expect.
+    """
+    inputs = {"x": px, "y": py, "z": pz}
+    pos_dict = {k: v for k, v in inputs.items() if v is not None}
+    if not pos_dict:
+        return
+    point = Vector(**pos_dict)
+    bound_method = getattr(tmp_machine, command)
+    bound_method(x=point.x, y=point.y, z=point.z)
+    tmp_machine.close()
+    l0 = line(tmp_file, -1)
+    # since machine was unitialised, every axis should be in last line
+    for k, v in zip(["X", "Y", "Z"], point):
+        assert f"{k.upper()}{tmp_machine.format(v)}" in l0
+
+
+@pytest.mark.parametrize("px", [None, 0, 1])
+@pytest.mark.parametrize("py", [None, 0, 2])
+def test_initial_position_arc(tmp_file, tmp_machine, px, py):
+    end = Vector(
+        x=px if px is not None else tmp_machine.position.x,
+        y=py if py is not None else tmp_machine.position.y,
+        z=0,
+    )
+    centre = tmp_machine.position + (end - tmp_machine.position) / 2
+    tmp_machine.arc(x=end.x, y=end.y, i=centre.x, j=centre.y)
+    tmp_machine.close()
+    assert (
+        f"X{tmp_machine.format(tmp_machine.position.x)} Y{tmp_machine.format(tmp_machine.position.y)}"
+        in line(tmp_file, -1)
+    )
