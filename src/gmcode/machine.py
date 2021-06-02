@@ -67,9 +67,12 @@ class Machine:
 
         self._queue = {}
 
-    def std_init(self):
+    def std_init(self, toolchange: bool = False):
         """
         Adds a standard preamble.
+
+        Args:
+          toolchange: Should we do an M600 and M6 T1 to set the tool length measurement?
         """
         self.comment("##### Start preamble #####")
         self.plane("xy")
@@ -80,8 +83,9 @@ class Machine:
         self.write("G90.1 ; arc centre absolute distance mode")
         self.write("G94 ; feed rate in units per minute")
         self.path_mode(p=0.05, q=0.05)
-        self.write("M600 ; reset toolchange")
-        self.toolchange(1)
+        if toolchange:
+            self.write("M600 ; reset toolchange")
+            self.toolchange(1)
         self.comment("##### End preamble #####")
 
     def _xyz_to_command(

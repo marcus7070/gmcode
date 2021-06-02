@@ -1,5 +1,5 @@
 import pytest
-from gmcode import MachineError, Vector
+from gmcode import MachineError, Vector, Machine
 from gmcode.geom import Line, ArcXY
 import math
 
@@ -9,6 +9,14 @@ def line(filename, idx):
         lines = f0.readlines()
 
     return lines[idx]
+
+
+def in_file(filename, string):
+    with open(filename) as f0:
+        if string in f0.read():
+            return True
+
+    return False
 
 
 def num_lines(filename, search_string: str) -> int:
@@ -417,3 +425,11 @@ def test_initial_position_arc(tmp_file, tmp_machine, px, py):
         f"X{tmp_machine.format(tmp_machine.position.x)} Y{tmp_machine.format(tmp_machine.position.y)}"
         in line(tmp_file, -1)
     )
+
+
+@pytest.mark.parametrize("toolchange", [False, True])
+def test_std_init_toolchange(tmp_file, toolchange):
+    g = Machine(tmp_file)
+    g.std_init(toolchange=toolchange)
+    g.close()
+    assert (in_file(tmp_file, "M600")) == toolchange
