@@ -3,6 +3,7 @@ Functions that operate on a Machine object.
 """
 
 from gmcode import Machine, Vector, MachineError
+from gmcode.geom import ArcXY
 from itertools import cycle
 from math import copysign, ceil
 
@@ -26,19 +27,21 @@ def spiral(
 
     if (centre.z - m.position.z) > m.accuracy:
         raise MachineError("Can not handle centre and start point outside of XY plane")
+
     vec0 = m.position - centre
-    radius_start = abs(vec0)
-    doc = copysign(doc, radius_start - radius_end)
-    wobble = vec0.unit_vector() * doc / 2
-    centres = [centre + wobble, centre - wobble]
-    last_radius = radius_end - doc  # the last radius that the spiral out should cut
+    radius_current = abs(vec0)
+    doc = copysign(doc, radius_end - radius_current)  # negative for cutting inwards
+    wobble = vec0.unit_vector() * doc / 4
+    centres = [centre - wobble, centre + wobble]
     counter = 0
     m.arc(i=centre.x, j=centre.y, cw=cw)
     for c in cycle(centres):
         # make a 180 degree arc around c
-        end = (c - m.position) + c
-        m.arc(end.x, end.y, i=c.x, j=c.y, cw=cw)
-        if abs(m.position - centre) - radius_end <= doc:
+        end = c - (m.position - c)
+        a = ArcXY(start=m.position, end=end, centre=c, cw=cw)
+        m.cut([a])
+        distance_to_go = copysign(1, doc) * radius_end - doc - a.radius()
+        if distance_to_go <= m.accuracy:
             break
 
         counter += 1
