@@ -287,7 +287,7 @@ def test_position_g1(tmp_machine):
     assert tmp_machine.position == Vector(11, 12, 13)
 
 
-@pytest.mark.parametrize("command,cw", [("G2", True), ("G3", False)])
+@pytest.mark.parametrize("command,cw", [("G2 ", True), ("G3 ", False)])
 def test_arc(tmp_file, tmp_machine, command, cw):
     tmp_machine.g0(100, 200)
     tmp_machine.g0(z=-1)
@@ -324,7 +324,7 @@ def test_position_arc(tmp_machine, cw):
     assert tmp_machine.position == end
 
 
-@pytest.mark.parametrize("command,cw", [("G2", True), ("G3", False)])
+@pytest.mark.parametrize("command,cw", [("G2 ", True), ("G3 ", False)])
 def test_arc_full_circle(tmp_file, tmp_machine, command, cw):
     tmp_machine.g0(10, 11, 12)
     tmp_machine.arc(i=15, j=11, p=1, cw=cw)

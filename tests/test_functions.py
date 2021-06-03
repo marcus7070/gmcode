@@ -18,7 +18,7 @@ def count_lines(filename, string):
     return sum([string in l0 for l0 in lines])
 
 
-@pytest.mark.parametrize("cw,command", [(True, "G2"), (False, "G3")])
+@pytest.mark.parametrize("cw,command", [(True, "G2 "), (False, "G3 ")])
 def test_sprial_in(tmp_file, tmp_machine, cw, command):
     centre = Vector(1, 2, -3)
     radius_start = 4
@@ -39,7 +39,7 @@ def test_sprial_in(tmp_file, tmp_machine, cw, command):
     assert "Y4.0" in s0 or "Y0.0" in s0
 
 
-@pytest.mark.parametrize("cw,command", [(True, "G2"), (False, "G3")])
+@pytest.mark.parametrize("cw,command", [(True, "G2 "), (False, "G3 ")])
 def test_sprial_out(tmp_file, tmp_machine, cw, command):
     centre = Vector(1, 2, -3)
     radius_start = 3
@@ -98,7 +98,7 @@ def test_spiral_overshoot(
             )
 
 
-@pytest.mark.parametrize("cw,command", [(True, "G2"), (False, "G3")])
+@pytest.mark.parametrize("cw,command", [(True, "G2 "), (False, "G3 ")])
 def test_helical_entry(tmp_file, tmp_machine, cw, command):
     centre = Vector(-5, -6, -7)
     radius = 4
