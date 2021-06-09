@@ -19,6 +19,7 @@ def in_file(filename, string):
     return False
 
 
+# TODO: deprecated
 def num_lines(filename, search_string: str) -> int:
     """
     Return the number of lines that search_string appears on.
@@ -41,11 +42,10 @@ def test_write(tmp_file, tmp_machine):
     assert s0 in l0
 
 
-def test_std_close(tmp_file, tmp_machine):
+def test_std_close(tmp_gcodefile, tmp_machine):
     tmp_machine.std_close()
     tmp_machine.close()
-    l0 = line(tmp_file, -1)
-    assert "M2" in l0
+    assert tmp_gcodefile.line_contains_gcode(-1, "M2")
 
 
 def test_format(tmp_machine):
