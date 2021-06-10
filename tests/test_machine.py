@@ -11,23 +11,6 @@ def line(filename, idx):
     return lines[idx]
 
 
-def in_file(filename, string):
-    with open(filename) as f0:
-        if string in f0.read():
-            return True
-
-    return False
-
-
-def num_lines(filename, search_string: str) -> int:
-    """
-    Return the number of lines that search_string appears on.
-    """
-    with open(filename) as f0:
-        entries = [search_string in l for l in f0.readlines()]
-    return sum(entries)
-
-
 def test_file_create(tmp_file, tmp_machine):
     tmp_machine.close()
     assert tmp_file.exists()
@@ -41,11 +24,10 @@ def test_write(tmp_file, tmp_machine):
     assert s0 in l0
 
 
-def test_std_close(tmp_file, tmp_machine):
+def test_std_close(tmp_gcodefile, tmp_machine):
     tmp_machine.std_close()
     tmp_machine.close()
-    l0 = line(tmp_file, -1)
-    assert "M2" in l0
+    assert tmp_gcodefile.line_contains_gcode(-1, "M2")
 
 
 def test_format(tmp_machine):
@@ -73,45 +55,42 @@ def test_accuracy(tmp_machine, accuracy):
     # small changes do change output
 
 
-def test_g0(tmp_file, tmp_machine):
+def test_g0(tmp_gcodefile, tmp_machine):
     tmp_machine.g0(100, 200, 3)
     tmp_machine.close()
-    l0 = line(tmp_file, -1)
-    assert "G0" in l0
-    assert "X100" in l0
-    assert "Y200" in l0
-    assert "Z3" in l0
+    assert tmp_gcodefile.line_contains_gcode(-1, "G0")
+    assert tmp_gcodefile.line_contains_word(-1, "X100")
+    assert tmp_gcodefile.line_contains_word(-1, "Y200")
+    assert tmp_gcodefile.line_contains_word(-1, "Z3")
 
 
-def test_set_feedrate(tmp_file, tmp_machine):
+def test_set_feedrate(tmp_gcodefile, tmp_machine):
     tmp_machine.feedrate(f=234)
     tmp_machine.close()
-    assert "F234" in line(tmp_file, -1)
+    assert tmp_gcodefile.line_contains_word(-1, "F234")
 
 
 @pytest.mark.parametrize("g_command", ["g0", "g1"])
 @pytest.mark.parametrize("o", [0, 0.0])
-def test_g_no_move(tmp_file, tmp_machine, o, g_command):
+def test_g_no_move(tmp_gcodefile, tmp_machine, o, g_command):
     if g_command == "g1":
         tmp_machine.feedrate(100)
     bound_method = getattr(tmp_machine, g_command)
     # first move will always produce output and initialise CNC position
     bound_method(o, o, o)
-    tmp_machine.write("something")
+    tmp_machine.comment("something")
     bound_method(o, o, o)
     tmp_machine.close()
-    l0 = line(tmp_file, -1)
-    assert g_command.lower() not in l0.lower()
+    assert not tmp_gcodefile.line_contains_gcode(-1, g_command)
 
 
-def test_g0_no_move_accuracy(tmp_file, tmp_machine):
+def test_g0_no_move_accuracy(tmp_gcodefile, tmp_machine):
     acc = tmp_machine.accuracy * 0.9
     tmp_machine.g0(0, 0, 0)
-    tmp_machine.write("something")
+    tmp_machine.comment("something")
     tmp_machine.g0(z=acc)
     tmp_machine.close()
-    l0 = line(tmp_file, -1)
-    assert "G0" not in l0
+    assert not tmp_gcodefile.line_contains_gcode(-1, "G0")
 
 
 def test_command_queue(tmp_machine):
@@ -168,11 +147,11 @@ def test_comment_exceptions(tmp_file, tmp_machine):
         ("g19", "G19"),
     ],
 )
-def test_plane(tmp_file, tmp_machine, s, c):
+def test_plane(tmp_gcodefile, tmp_machine, s, c):
     tmp_machine.plane(s)
     tmp_machine.close()
     # plane commands are not repeated, so need to scan the whole file not just the last line
-    assert num_lines(tmp_file, c) == 1
+    assert tmp_gcodefile.count_gcode(c) == 1
 
 
 @pytest.mark.parametrize(
@@ -184,13 +163,13 @@ def test_plane(tmp_file, tmp_machine, s, c):
         ("g19", "G19"),
     ],
 )
-def test_plane_repeat(tmp_file, tmp_machine, c, s):
+def test_plane_repeat(tmp_gcodefile, tmp_machine, c, s):
     s0 = "start of plane commands"
     tmp_machine.comment(s0)
     tmp_machine.plane(s)
     tmp_machine.plane(s)
     tmp_machine.close()
-    assert num_lines(tmp_file, c) == 1
+    assert tmp_gcodefile.count_gcode(c) == 1
 
 
 def test_plane_fail(tmp_machine):
@@ -201,14 +180,14 @@ def test_plane_fail(tmp_machine):
         tmp_machine.plane("UV")
 
 
-def test_toolchange(tmp_file, tmp_machine):
+def test_toolchange(tmp_gcodefile, tmp_machine):
     # should start on tool #1
     tmp_machine.toolchange(1)
     tmp_machine.toolchange(2)
     tmp_machine.toolchange(2)
     tmp_machine.close()
-    assert num_lines(tmp_file, "T1") == 1
-    assert num_lines(tmp_file, "T2") == 1
+    assert tmp_gcodefile.count_gcode("T1") == 1
+    assert tmp_gcodefile.count_gcode("T2") == 1
 
 
 @pytest.mark.parametrize(
@@ -220,31 +199,34 @@ def test_toolchange(tmp_file, tmp_machine):
         ({"p": 0.2, "q": 0.3}, ["G64 P0.2", "Q0.3"], ["G61"]),
     ],
 )
-def test_path_mode(tmp_file, tmp_machine, kwargs, in_result, not_in_result):
+def test_path_mode(tmp_gcodefile, tmp_machine, kwargs, in_result, not_in_result):
     tmp_machine.path_mode(**kwargs)
     tmp_machine.close()
     # find the last G61 or G64 line, which might be in the preamble
-    with open(tmp_file) as f0:
-        lines = f0.readlines()
-
-    l0 = next(l for l in lines[::-1] if ("G61" in l) or ("G64" in l))
+    l0 = next(
+        l
+        for l in tmp_gcodefile.lines[::-1]
+        if ("G61" in str(l.gcodes[0].word)) or ("G64" in str(l.gcodes[0].word))
+    )
     for s in in_result:
-        assert s in l0
+        assert s in l0.text
 
     for s in not_in_result:
-        assert s not in l0
+        assert s not in l0.text
 
 
-def test_dwell(tmp_file, tmp_machine):
+def test_dwell(tmp_gcodefile, tmp_machine):
     tmp_machine.dwell(3.145)
     tmp_machine.dwell(3.145)
     tmp_machine.close()
-    assert "G4 P3.145" in line(tmp_file, -1)
+    assert tmp_gcodefile.line_contains_gcode(-1, "G4")
+    assert tmp_gcodefile.line_contains_word(-1, "P3.145")
     # there was two dwell commands
-    assert "G4 P3.145" in line(tmp_file, -2)
+    assert tmp_gcodefile.line_contains_gcode(-2, "G4")
+    assert tmp_gcodefile.line_contains_word(-2, "P3.145")
 
 
-def test_std_init(tmp_file, tmp_machine):
+def test_std_init(tmp_gcodefile, tmp_machine):
     tmp_machine.close()
     codes = [
         "G17",  # set the plane
@@ -257,7 +239,7 @@ def test_std_init(tmp_file, tmp_machine):
         "G64",  # path blending mode
     ]
     for code in codes:
-        assert num_lines(tmp_file, code) >= 1
+        assert tmp_gcodefile.count_gcode(code) >= 1
 
 
 def test_position_g0(tmp_machine):
@@ -288,7 +270,7 @@ def test_position_g1(tmp_machine):
 
 
 @pytest.mark.parametrize("command,cw", [("G2 ", True), ("G3 ", False)])
-def test_arc(tmp_file, tmp_machine, command, cw):
+def test_arc(tmp_gcodefile, tmp_machine, command, cw):
     tmp_machine.g0(100, 200)
     tmp_machine.g0(z=-1)
     current_pos = tmp_machine.position
@@ -296,13 +278,12 @@ def test_arc(tmp_file, tmp_machine, command, cw):
     end = current_pos + Vector(0, 10, 0)
     tmp_machine.arc(y=end.y, i=centre.x, j=centre.y, cw=cw)
     tmp_machine.close()
-    assert command in line(tmp_file, -1)
-    assert "X100" in line(tmp_file, -1)
-    assert "Y210" in line(tmp_file, -1)
-    assert "I100" in line(tmp_file, -1)
-    assert "J205" in line(tmp_file, -1)
-    assert "Z" not in line(tmp_file, -1)
-    assert "P" not in line(tmp_file, -1)
+    assert tmp_gcodefile.line_contains_gcode(-1, command)
+    for w in ["X100", "Y210", "I100", "J205"]:
+        assert tmp_gcodefile.line_contains_word(-1, w)
+
+    assert "Z" not in tmp_gcodefile.lines[-1].text
+    assert "P" not in tmp_gcodefile.lines[-1].text
 
 
 @pytest.mark.parametrize("cw", [True, False])
@@ -325,15 +306,15 @@ def test_position_arc(tmp_machine, cw):
 
 
 @pytest.mark.parametrize("command,cw", [("G2 ", True), ("G3 ", False)])
-def test_arc_full_circle(tmp_file, tmp_machine, command, cw):
+def test_arc_full_circle(tmp_gcodefile, tmp_machine, command, cw):
     tmp_machine.g0(10, 11, 12)
     tmp_machine.arc(i=15, j=11, p=1, cw=cw)
     assert tmp_machine.position == Vector(10, 11, 12)
     tmp_machine.close()
-    assert command in line(tmp_file, -1)
+    assert tmp_gcodefile.line_contains_gcode(-1, command)
 
 
-def test_cut_lines(tmp_file, tmp_machine):
+def test_cut_lines(tmp_gcodefile, tmp_machine):
 
     point0 = Vector(1, 1, 0)
     point1 = Vector(2, 2, 0)
@@ -353,18 +334,17 @@ def test_cut_lines(tmp_file, tmp_machine):
     tmp_machine.cut(lines)
     assert tmp_machine.position == point0
     tmp_machine.close()
-    assert f"G1 X{tmp_machine.format(point0.x)}" in line(tmp_file, -1)
-    assert (
-        f"G1 X{tmp_machine.format(point2.x)} Y{tmp_machine.format(point2.y)}"
-        in line(tmp_file, -2)
-    )
-    assert (
-        f"G1 X{tmp_machine.format(point1.x)} Y{tmp_machine.format(point1.y)}"
-        in line(tmp_file, -3)
-    )
+    assert tmp_gcodefile.line_contains_gcode(-1, "G1")
+    assert tmp_gcodefile.line_contains_word(-1, f"X{tmp_machine.format(point0.x)}")
+    assert tmp_gcodefile.line_contains_gcode(-2, "G1")
+    assert tmp_gcodefile.line_contains_word(-2, f"X{tmp_machine.format(point2.x)}")
+    assert tmp_gcodefile.line_contains_word(-2, f"Y{tmp_machine.format(point2.y)}")
+    assert tmp_gcodefile.line_contains_gcode(-3, "G1")
+    assert tmp_gcodefile.line_contains_word(-3, f"X{tmp_machine.format(point1.x)}")
+    assert tmp_gcodefile.line_contains_word(-3, f"Y{tmp_machine.format(point1.y)}")
 
 
-def test_cut_arcs(tmp_file, tmp_machine):
+def test_cut_arcs(tmp_gcodefile, tmp_machine):
 
     point0 = Vector(0, 0, 0)
     centre0 = Vector(1, 0, 0)
@@ -380,15 +360,17 @@ def test_cut_arcs(tmp_file, tmp_machine):
     assert tmp_machine.position == point2
     tmp_machine.close()
 
-    assert f"G3 X{tmp_machine.format(point2.x)}" in line(tmp_file, -1)
-    assert f"G2 X{tmp_machine.format(point1.x)}" in line(tmp_file, -2)
+    assert tmp_gcodefile.line_contains_gcode(-1, "G3")
+    assert tmp_gcodefile.line_contains_word(-1, f"X{tmp_machine.format(point2.x)}")
+    assert tmp_gcodefile.line_contains_gcode(-2, "G2")
+    assert tmp_gcodefile.line_contains_word(-2, f"X{tmp_machine.format(point1.x)}")
 
 
 @pytest.mark.parametrize("command", ["g0", "g1"])
 @pytest.mark.parametrize("px", [None, 0, 1])
 @pytest.mark.parametrize("py", [None, 0, 2])
 @pytest.mark.parametrize("pz", [None, 0, 3])
-def test_initial_position(tmp_file, tmp_machine, command, px, py, pz):
+def test_initial_position(tmp_gcodefile, tmp_machine, command, px, py, pz):
     """
     Machine.g0 and .g1 do not print out axis words unless needed. Machine
     initialises position as (0, 0, 0), but it's pretty common for the CNC
@@ -404,15 +386,17 @@ def test_initial_position(tmp_file, tmp_machine, command, px, py, pz):
     bound_method = getattr(tmp_machine, command)
     bound_method(x=point.x, y=point.y, z=point.z)
     tmp_machine.close()
-    l0 = line(tmp_file, -1)
+    l0 = tmp_gcodefile.lines[-1]
     # since machine was unitialised, every axis should be in last line
     for k, v in zip(["X", "Y", "Z"], point):
-        assert f"{k.upper()}{tmp_machine.format(v)}" in l0
+        assert k in l0.gcodes[0].params
+        assert v == pytest.approx(l0.gcodes[0].params[k].value)
+        # assert f"{k.upper()}{tmp_machine.format(v)}" in l0
 
 
 @pytest.mark.parametrize("px", [None, 0, 1])
 @pytest.mark.parametrize("py", [None, 0, 2])
-def test_initial_position_arc(tmp_file, tmp_machine, px, py):
+def test_initial_position_arc(tmp_gcodefile, tmp_machine, px, py):
     end = Vector(
         x=px if px is not None else tmp_machine.position.x,
         y=py if py is not None else tmp_machine.position.y,
@@ -421,15 +405,17 @@ def test_initial_position_arc(tmp_file, tmp_machine, px, py):
     centre = tmp_machine.position + (end - tmp_machine.position) / 2
     tmp_machine.arc(x=end.x, y=end.y, i=centre.x, j=centre.y)
     tmp_machine.close()
-    assert (
-        f"X{tmp_machine.format(tmp_machine.position.x)} Y{tmp_machine.format(tmp_machine.position.y)}"
-        in line(tmp_file, -1)
+    assert tmp_gcodefile.line_contains_word(
+        -1, f"X{tmp_machine.format(tmp_machine.position.x)}"
+    )
+    assert tmp_gcodefile.line_contains_word(
+        -1, f"Y{tmp_machine.format(tmp_machine.position.y)}"
     )
 
 
 @pytest.mark.parametrize("toolchange", [False, True])
-def test_std_init_toolchange(tmp_file, toolchange):
+def test_std_init_toolchange(tmp_file, tmp_gcodefile, toolchange):
     g = Machine(tmp_file)
     g.std_init(toolchange=toolchange)
     g.close()
-    assert (in_file(tmp_file, "M600")) == toolchange
+    assert any(l.text.startswith("M600") for l in tmp_gcodefile.lines) == toolchange

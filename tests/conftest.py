@@ -1,5 +1,6 @@
 import pytest
 from gmcode import Machine
+from .utils import GcodeFile
 
 
 @pytest.fixture
@@ -14,3 +15,8 @@ def tmp_machine(tmp_file):
     g = Machine(tmp_file)
     g.std_init()
     return g
+
+
+@pytest.fixture
+def tmp_gcodefile(tmp_file):
+    return GcodeFile(tmp_file)
