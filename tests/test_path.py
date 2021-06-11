@@ -1,5 +1,6 @@
 from gmcode.geom import Line, ArcXY, Vector
 import pytest
+import math
 
 
 def test_line_tangent():
@@ -218,3 +219,68 @@ def test_arcxy_radial_dir():
     )
     assert a0._radial_dir(0) == Vector(0, -1, 0)
     assert a0._radial_dir(1) == Vector(-1, 0, 0)
+
+
+@pytest.mark.parametrize("cw", [True, False])
+def test_arcxy_offset_centered(cw):
+
+    a0 = ArcXY(
+        start=Vector(1, 0, 0),
+        end=Vector(0, 1, 0),
+        centre=Vector(0, 0, 0),
+        cw=cw,
+    )
+
+    a1 = ArcXY(
+        start=Vector(2, 0, 0),
+        end=Vector(0, 2, 0),
+        centre=Vector(0, 0, 0),
+        cw=cw,
+    )
+
+    assert a0.offset_xy(1) == a1
+
+
+@pytest.mark.parametrize("cw", [True, False])
+@pytest.mark.parametrize("centre", [(1, 1), (2.5, -0.1), (-10, -10.1), (-0.1, 0.2)])
+@pytest.mark.parametrize("radius", [0.1, 1.1, 10.3])
+@pytest.mark.parametrize("angle_start", [30, 135, 181, 359])
+@pytest.mark.parametrize("angle_end", [41, 146, 192, 348])
+@pytest.mark.parametrize("offset", [0.1, 1.1, 10.1])
+def test_arcxy_offset(cw, centre, radius, angle_start, angle_end, offset):
+
+    centre_vec = Vector(*centre)
+    start_vec = (
+        Vector(
+            math.cos(math.radians(angle_start)) * radius,
+            math.sin(math.radians(angle_start)) * radius,
+        )
+        + centre_vec
+    )
+    end_vec = (
+        Vector(
+            math.cos(math.radians(angle_end)) * radius,
+            math.sin(math.radians(angle_end)) * radius,
+        )
+        + centre_vec
+    )
+    a0 = ArcXY(
+        start=start_vec,
+        end=end_vec,
+        centre=centre_vec,
+        cw=cw,
+    )
+    a1 = a0.offset_xy(offset)
+
+    def check(arc, offset):
+        assert arc.radius() == pytest.approx(radius + offset)
+        assert abs(arc.start - start_vec) == pytest.approx(abs(offset))
+        assert abs(arc.end - end_vec) == pytest.approx(abs(offset))
+        for val in [0, 1]:
+            assert arc.tangent(val) == a0.tangent(val)
+
+    check(a1, offset)
+
+    new_offset = -radius / 2
+    a2 = a0.offset_xy(new_offset)
+    check(a2, new_offset)

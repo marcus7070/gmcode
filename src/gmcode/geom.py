@@ -172,3 +172,9 @@ class ArcXY(PathElement):
         Average the two radii for that tiny bit better accuracy.
         """
         return (abs(self.start - self.centre) + abs(self.end - self.centre)) / 2
+
+    def offset_xy(self, val: float) -> "ArcXY":
+
+        start = self._radial_dir(0) * val + self.start
+        end = self._radial_dir(1) * val + self.end
+        return ArcXY(start=start, end=end, centre=self.centre, cw=self.cw)
