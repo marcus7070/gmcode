@@ -1,6 +1,6 @@
 # gmcode
 
-Python helper for writing g-code
+Python helper for writing g-code. Absolutely a work in progress. Not ready for use.
 
 ## Motivation
 
@@ -20,4 +20,4 @@ I have some classes in `geom.py` that might appear to be general purpose, but no
 
 ### [mecode](https://github.com/jminardi/mecode)
 
-This was absolutely the inspiration for gmcode. I started using it, but I had some minor annoyances with the bloat introduced from 3D printer features and serial communications.
+This was absolutely the inspiration for gmcode. I started using it, but I had some minor annoyances with the bloat introduced from 3D printer features and serial communications, and I was missing some helper functions/classes for creating tool paths.
