@@ -1,4 +1,4 @@
-from typing import List, TextIO, Optional
+from typing import List, Optional
 from pygcode import Line, Word
 
 
