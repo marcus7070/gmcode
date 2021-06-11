@@ -164,12 +164,8 @@ class ArcXY(PathElement):
 
     def tangent(self, val: Literal[0, 1]) -> Vector:
 
-        point = self.end if val else self.start
-        if self.cw:
-            line = Line(self.centre, point)
-        else:
-            line = Line(point, self.centre)
-        return line.normal()
+        axis = Vector(0, 0, 1) if self.cw else Vector(0, 0, -1)
+        return self._radial_dir(val).cross(axis).unit_vector()
 
     def radius(self) -> float:
         """
