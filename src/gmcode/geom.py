@@ -94,10 +94,6 @@ class PathElement:
     start: Vector = attr.ib(Vector())
     end: Vector = attr.ib(Vector())
 
-    def offset(self, val_xy: float, val_z: float = 0.0) -> "PathElement":
-
-        raise NotImplementedError()
-
     def tangent(self, val: Literal[0, 1]) -> Vector:
 
         raise NotImplementedError()
