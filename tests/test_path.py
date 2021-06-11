@@ -196,3 +196,25 @@ def test_arcxy_radius():
         centre=Vector(-1, -0.5, -1),
     )
     assert a2.radius() == pytest.approx(0.5)
+
+
+def test_arcxy_radial_dir_centered():
+
+    a0 = ArcXY(
+        start=Vector(1, 0, 0),
+        end=Vector(0, 1, 0),
+        centre=Vector(0, 0, 0),
+    )
+    assert a0._radial_dir(0) == Vector(1, 0, 0)
+    assert a0._radial_dir(1) == Vector(0, 1, 0)
+
+
+def test_arcxy_radial_dir():
+
+    a0 = ArcXY(
+        start=Vector(1, 0, 0),
+        end=Vector(0, 1, 0),
+        centre=Vector(1, 1, 0),
+    )
+    assert a0._radial_dir(0) == Vector(0, -1, 0)
+    assert a0._radial_dir(1) == Vector(-1, 0, 0)

@@ -147,6 +147,7 @@ class ArcXY(PathElement):
             raise ValueError(
                 f"start({self.start}), end({self.end}) and centre({self.centre}) do not form an arc"
             )
+        # TODO: test that start/end/centre are possible with the value of cw
 
     # TODO: class method for making an arc from start, end and radius, for
     # which the following old code might be useful:
@@ -156,6 +157,10 @@ class ArcXY(PathElement):
     #     h_unsigned = math.sqrt(self.radius ** 2 - (l0.length() / 2) ** 2)
     #     h = math.copysign(h_unsigned, self.radius)
     #     return l0.centre() + h * l0.normal()
+
+    def _radial_dir(self, val: Literal[0, 1]) -> Vector:
+        point = self.end if val else self.start
+        return (point - self.centre).unit_vector()
 
     def tangent(self, val: Literal[0, 1]) -> Vector:
 
