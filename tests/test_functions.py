@@ -24,10 +24,11 @@ def test_sprial_in(tmp_gcodefile, tmp_machine, cw, command):
     radius_start = 4
     radius_end = radius_start / 2
     start = centre + radius_start * Vector(0, -1, 0)
+    doc = 0.22
     tmp_machine.feedrate(100)
     tmp_machine.g0(start.x, start.y)
     tmp_machine.g1(z=start.z)
-    functions.spiral(tmp_machine, centre=centre, radius_end=radius_end, doc=0.22, cw=cw)
+    functions.spiral(tmp_machine, centre=centre, radius_end=radius_end, doc=doc, cw=cw)
 
     assert abs(tmp_machine.position - centre) == pytest.approx(radius_end)
     tmp_machine.close()
@@ -38,6 +39,10 @@ def test_sprial_in(tmp_gcodefile, tmp_machine, cw, command):
     y_correct = tmp_gcodefile.line_contains_word(-1, "Y4.0")
     y_correct += tmp_gcodefile.line_contains_word(-1, "Y0.0")
     assert y_correct
+    # check we have the correct number of loops
+    assert tmp_gcodefile.count_gcode(command) / 2 >= math.floor(
+        (radius_start - radius_end) / doc
+    )
 
 
 @pytest.mark.parametrize("cw,command", [(True, "G2 "), (False, "G3 ")])

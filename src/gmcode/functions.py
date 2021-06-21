@@ -40,7 +40,7 @@ def spiral(
         end = c - (m.position - c)
         a = ArcXY(start=m.position, end=end, centre=c, cw=cw)
         m.cut([a])
-        distance_to_go = copysign(1, doc) * radius_end - doc - a.radius()
+        distance_to_go = copysign(1, doc) * ((radius_end - doc) - a.radius())
         if distance_to_go <= m.accuracy:
             break
 
