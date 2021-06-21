@@ -302,6 +302,12 @@ class Machine:
     def dwell(self, time: float):
         self.write(f"G4 P{self.format(time)}")
 
+    def pause(self):
+        """
+        Writes a M0 pause command.
+        """
+        self.write("M0")
+
     def path_mode(
         self,
         exact_path: bool = False,

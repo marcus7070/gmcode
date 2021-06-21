@@ -419,3 +419,9 @@ def test_std_init_toolchange(tmp_file, tmp_gcodefile, toolchange):
     g.std_init(toolchange=toolchange)
     g.close()
     assert any(l.text.startswith("M600") for l in tmp_gcodefile.lines) == toolchange
+
+
+def test_pause(tmp_gcodefile, tmp_machine):
+    tmp_machine.pause()
+    tmp_machine.close()
+    assert tmp_gcodefile.line_contains_gcode(-1, "M0")
