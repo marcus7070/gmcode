@@ -136,3 +136,18 @@ def test_helical_entry(tmp_gcodefile, tmp_machine, cw, command):
     assert returned_gcode.params["P"].value >= math.floor(centre.z / doc)
     assert "Z" in returned_gcode.params
     assert returned_gcode.params["Z"].value == pytest.approx(centre.z)
+
+
+@pytest.mark.parametrize("centre", [None, Vector(10, 10), Vector(-1, -1)])
+def test_rect_in(tmp_gcodefile, tmp_machine, centre):
+    centre_vec = centre if centre else Vector()
+    start_vec = centre_vec + Vector(20, 10)
+    tmp_machine.g0(start_vec.x, start_vec.y)
+    tmp_machine.g1(z=-5)
+    args = {"m": tmp_machine, "woc": 1}
+    if centre:
+        args.update(centre=centre)
+    functions.rect_in(**args)
+    tmp_machine.close()
+    # that should have made 10 loops, each with 4 g1 commands + 1 for the inital
+    assert tmp_gcodefile.count_gcode("G1") == pytest.approx(10 * 4 + 1, abs=1)
