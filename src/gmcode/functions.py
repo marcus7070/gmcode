@@ -66,6 +66,7 @@ def helical_entry(
     Helix with a defined depth of cut.
 
     Args:
+      m: Machine instance to act on.
       centre: Centre of the helix, z value doesn't matter.
       final_height: Helix will end at this height.
       doc: Helix will be close to this depth of cut, will not exceed it.
