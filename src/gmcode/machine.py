@@ -227,7 +227,7 @@ class Machine:
         for p in paths:
             if self.position != p.start:
                 raise MachineError(
-                    f"Current position ({p}) is not equal to path start position ({p.start})"
+                    f"Current position ({self.position}) is not equal to path start position ({p.start})"
                 )
             if isinstance(p, Line):
                 self.g1(*p.end)
