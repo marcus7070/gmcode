@@ -315,6 +315,9 @@ class Machine:
         p: float = 0.0,
         q: Optional[float] = None,
     ):
+        """
+        No arguments produces "G64", which is "best speed" mode.
+        """
         if exact_stop:
             command = "G61.1"
         elif exact_path:
